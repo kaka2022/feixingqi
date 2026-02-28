@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>❤️ 我们的专属飞行棋</title>
+    <style>
+        :root {
+            --p1-color: #ff6b81;
+            --p2-color: #4834d4;
+            --bg-color: #fff5f7;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg-color);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            touch-action: manipulation;
+        }
+
+        h1 { margin-top: 20px; color: #ff4757; font-size: 1.5rem; }
+
+        #status-bar {
+            margin: 10px;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-weight: bold;
+        }
+
+        /* 棋盘布局：4x4 环形 */
+        #board {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(4, 75px);
+            grid-template-rows: repeat(4, 75px);
+            gap: 8px;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            width: 75px;
+            height: 75px;
+            background: #fdfcfc;
+            border: 2px solid #ffdae0;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #ff6b81;
+            box-sizing: border-box;
+            text-align: center;
+            padding: 2px;
+        }
+
+        .empty { visibility: hidden; }
+
+        /* 棋子样式 */
+        .piece {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        #p1 { background-color: var(--p1-color); }
+        #p2 { background-color: var(--p2-color); transform: translate(5px, 5px); }
+
+        /* 控制区 */
+        .controls {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        #dice-btn {
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #ff6b81, #ff4757);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        #dice-btn:active { transform: scale(0.95); }
+
+        #msg-display {
+            margin-top: 15px;
+            padding: 0 20px;
+            min-height: 3rem;
+            color: #555;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        /* 胜利弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 100px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>❤️ 我们的飞行棋</h1>
+    
+    <div id="status-bar">轮到 <span id="turn-name" style="color:var(--p1-color)">红色玩家</span></div>
+
+    <div id="board">
+        <div class="cell" id="c0">起点</div>
+        <div class="cell" id="c1">抱抱</div>
+        <div class="cell" id="c2">真心话</div>
+        <div class="cell" id="c3">夸对方</div>
+        
+        <div class="cell" id="c11">亲一下</div>
+        <div class="empty"></div><div class="empty"></div>
+        <div class="cell" id="c4">摸头杀</div>
+        
+        <div class="cell" id="c10">对视</div>
+        <div class="empty"></div><div class="empty"></div>
+        <div class="cell" id="c5">大冒险</div>
+        
+        <div class="cell" id="c9">捏脸</div>
+        <div class="cell" id="c8">惩罚</div>
+        <div class="cell" id="c7">互换</div>
+        <div class="cell" id="c6">终点</div>
+
+        <div id="p1" class="piece"></div>
+        <div id="p2" class="piece"></div>
+    </div>
+
+    <div class="controls">
+        <button id="dice-btn" onclick="roll()">投掷骰子</button>
+        <div id="msg-display">点击按钮开始</div>
+    </div>
+
+    <div id="winModal" class="modal">
+        <h2 id="winner-text"></h2>
+        <button onclick="location.reload()">重新开始</button>
+    </div>
+
+    <script>
+        const players = [
+            { id: 'p1', pos: 0, name: '红色玩家', color: '#ff6b81' },
+            { id: 'p2', pos: 0, name: '蓝色玩家', color: '#4834d4' }
+        ];
+        
+        // 自定义任务内容
+        const tasks = {
+            1: "给对方一个持续 10 秒的深深拥抱 🤗",
+            2: "真心话：说出对方最近做的一件让你开心的事 ❤️",
+            3: "连续夸对方三个优点，不许重复！✨",
+            4: "温柔地给对方一个“摸头杀” ✋",
+            5: "大冒险：让对方在你脸上画一个小爱心（或者亲一口）",
+            7: "交换手机查看对方相册最后一张照片 📸",
+            8: "【惩罚】倒退 2 格，并给对方揉揉肩膀 💆",
+            9: "轻轻捏住对方的脸蛋保持 5 秒 🤏",
+            10: "两人深情对视 20 秒，先笑的人输了！",
+            11: "亲一下对方的额头或脸颊 💋"
+        };
+
+        let currentPlayerIndex = 0;
+        const maxPos = 11;
+
+        function roll() {
+            const btn = document.getElementById('dice-btn');
+            btn.disabled = true;
+
+            const dice = Math.floor(Math.random() * 6) + 1;
+            const p = players[currentPlayerIndex];
+            
+            document.getElementById('msg-display').innerHTML = `${p.name} 掷出了 <strong>${dice}</strong> 点`;
+
+            setTimeout(() => {
+                p.pos += dice;
+                if (p.pos >= maxPos) {
+                    p.pos = maxPos;
+                    endGame(p);
+                }
+                
+                updateUI();
+                checkTask(p);
+            }, 400);
+        }
+
+        function checkTask(p) {
+            setTimeout(() => {
+                const task = tasks[p.pos];
+                if (task) {
+                    document.getElementById('msg-display').innerHTML = `任务：${task}`;
+                }
+                
+                // 准备下一回合
+                currentPlayerIndex = 1 - currentPlayerIndex;
+                const nextP = players[currentPlayerIndex];
+                const turnDisplay = document.getElementById('turn-name');
+                turnDisplay.innerText = nextP.name;
+                turnDisplay.style.color = nextP.color;
+                
+                document.getElementById('dice-btn').disabled = false;
+            }, 600);
+        }
+
+        function updateUI() {
+            players.forEach(p => {
+                const piece = document.getElementById(p.id);
+                const cell = document.getElementById(`c${p.pos}`);
+                piece.style.left = (cell.offsetLeft + 20) + 'px';
+                piece.style.top = (cell.offsetTop + 20) + 'px';
+            });
+        }
+
+        function endGame(p) {
+            const modal = document.getElementById('winModal');
+            document.getElementById('winner-text').innerText = `🎉 ${p.name} 获胜！\n败者要答应胜者一个愿望哦！`;
+            modal.style.display = 'block';
+        }
+
+        // 初始位置
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
