@@ -21,7 +21,6 @@
 
         h1 { margin: 15px 0; color: #ff4757; font-size: 1.4rem; }
 
-        /* 棋盘布局 */
         #board {
             position: relative;
             display: grid;
@@ -44,7 +43,6 @@
 
         .empty { visibility: hidden; }
 
-        /* 棋子 */
         .piece {
             position: absolute; width: 30px; height: 30px;
             border-radius: 50%; border: 3px solid white;
@@ -55,45 +53,43 @@
         #p1 { background-color: var(--p1-color); }
         #p2 { background-color: var(--p2-color); transform: translate(8px, 8px); }
 
-        /* --- 3D 骰子样式 --- */
+        /* 3D 骰子容器 */
         .dice-container {
             perspective: 600px;
-            margin: 20px 0;
+            margin: 25px 0;
         }
 
         .dice {
             width: 60px; height: 60px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 1.5s cubic-bezier(0.1, 0.5, 0.3, 1);
-            cursor: pointer;
+            transition: transform 1.2s cubic-bezier(0.15, 0.8, 0.3, 1);
         }
 
         .dice div {
             position: absolute; width: 60px; height: 60px;
-            background: white; border: 2px solid #eee;
+            background: white; border: 2px solid #ddd;
             border-radius: 10px; display: flex;
             align-items: center; justify-content: center;
             font-size: 24px; font-weight: bold; color: #333;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
         }
 
-        /* 骰子六面坐标 */
-        .front  { transform: rotateY(0deg) translateZ(30px); }
-        .back   { transform: rotateY(180deg) translateZ(30px); }
-        .right  { transform: rotateY(90deg) translateZ(30px); }
-        .left   { transform: rotateY(-90deg) translateZ(30px); }
-        .top    { transform: rotateX(90deg) translateZ(30px); }
-        .bottom { transform: rotateX(-90deg) translateZ(30px); }
+        /* 骰子面的坐标修正 */
+        .face-1 { transform: rotateY(0deg) translateZ(30px); }
+        .face-6 { transform: rotateY(180deg) translateZ(30px); }
+        .face-3 { transform: rotateY(90deg) translateZ(30px); }
+        .face-4 { transform: rotateY(-90deg) translateZ(30px); }
+        .face-2 { transform: rotateX(-90deg) translateZ(30px); }
+        .face-5 { transform: rotateX(90deg) translateZ(30px); }
 
-        /* 控件 */
         .controls { text-align: center; }
         #dice-btn {
             padding: 12px 40px; font-size: 1rem;
             background: linear-gradient(135deg, #ff6b81, #ff4757);
             color: white; border: none; border-radius: 50px;
             box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         #msg-display {
@@ -128,18 +124,18 @@
 
     <div class="dice-container">
         <div class="dice" id="dice">
-            <div class="front">1</div>
-            <div class="back">6</div>
-            <div class="right">3</div>
-            <div class="left">4</div>
-            <div class="top">2</div>
-            <div class="bottom">5</div>
+            <div class="face-1">1</div>
+            <div class="face-6">6</div>
+            <div class="face-3">3</div>
+            <div class="face-4">4</div>
+            <div class="face-2">2</div>
+            <div class="face-5">5</div>
         </div>
     </div>
 
     <div class="controls">
         <button id="dice-btn" onclick="roll()">投掷骰子</button>
-        <div id="msg-display">点击投掷开始</div>
+        <div id="msg-display">点击开始</div>
     </div>
 
     <script>
@@ -158,6 +154,8 @@
 
         let currentPlayerIndex = 0;
         const maxPos = 11;
+        let rotationX = 0;
+        let rotationY = 0;
 
         function roll() {
             const btn = document.getElementById('dice-btn');
@@ -166,21 +164,26 @@
 
             const diceValue = Math.floor(Math.random() * 6) + 1;
             
-            // 骰子旋转逻辑 (增加随机圈数让效果更逼真)
-            const xRot = Math.floor(Math.random() * 4) * 90 + 720; 
-            const yRot = Math.floor(Math.random() * 4) * 90 + 720;
+            // 核心修复：精准计算每个点数对应的 CSS 旋转角度
+            // 我们通过在原有的旋转基础上增加大角度偏移，实现“滚动感”
+            const extraRounds = 5; // 每次多转 5 圈
             
-            // 这里的旋转映射根据骰子面的定义微调
-            const rotations = {
-                1: "rotateX(0deg) rotateY(0deg)",
-                2: "rotateX(-90deg) rotateY(0deg)",
-                3: "rotateX(0deg) rotateY(-90deg)",
-                4: "rotateX(0deg) rotateY(90deg)",
-                5: "rotateX(90deg) rotateY(0deg)",
-                6: "rotateX(180deg) rotateY(0deg)"
-            };
+            let targetX = 0, targetY = 0;
+            
+            switch(diceValue) {
+                case 1: targetX = 0;   targetY = 0;   break;
+                case 6: targetX = 0;   targetY = 180; break;
+                case 3: targetX = 0;   targetY = -90; break;
+                case 4: targetX = 0;   targetY = 90;  break;
+                case 2: targetX = 90;  targetY = 0;   break;
+                case 5: targetX = -90; targetY = 0;   break;
+            }
+            
+            // 叠加圈数防止倒转，并实现丝滑滚动
+            rotationX += (extraRounds * 360) + targetX - (rotationX % 360);
+            rotationY += (extraRounds * 360) + targetY - (rotationY % 360);
 
-            diceEl.style.transform = rotations[diceValue] + ` rotateX(${xRot}deg) rotateY(${yRot}deg)`;
+            diceEl.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
 
             setTimeout(() => {
                 const p = players[currentPlayerIndex];
@@ -192,14 +195,15 @@
                 if(p.pos === maxPos) {
                     document.getElementById('msg-display').innerHTML = `🎉 ${p.name} 赢了！`;
                 } else {
-                    checkTask(p);
+                    checkTask(p, diceValue);
                 }
-            }, 1500); // 对应 CSS 的 transition 时间
+            }, 1300); 
         }
 
-        function checkTask(p) {
-            const task = tasks[p.pos] || "安全区域，享受当下 ❤️";
-            document.getElementById('msg-display').innerHTML = `<span style="color:${p.color}"><b>${p.name}</b></span> 停在第 ${p.pos} 格：<br>${task}`;
+        function checkTask(p, diceValue) {
+            const task = tasks[p.pos] || "休息一下 ❤️";
+            document.getElementById('msg-display').innerHTML = 
+                `<span style="color:${p.color}"><b>${p.name}</b></span> 掷出 ${diceValue} 点，停在第 ${p.pos} 格：<br>${task}`;
             
             currentPlayerIndex = 1 - currentPlayerIndex;
             document.getElementById('dice-btn').disabled = false;
