@@ -3,222 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>❤️ 我们的专属飞行棋</title>
+    <title>🔞 终极私密飞行棋</title>
     <style>
         :root {
-            --p1-color: #ff6b81;
-            --p2-color: #4834d4;
-            --bg-color: #fff5f7;
+            --p1-color: #ff4757; --p2-color: #2f3542;
+            --bg-dark: #0f0c29; --reward-bg: #ff758c; --punish-bg: #6a11cb;
         }
-
         body {
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center;
-            background-color: var(--bg-color);
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            touch-action: manipulation;
+            margin: 0; background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
         }
-
-        h1 { margin: 15px 0; color: #ff4757; font-size: 1.4rem; }
-
+        h1 { font-size: 1.2rem; margin: 15px 0; color: #ff4757; text-shadow: 0 0 10px rgba(255,71,87,0.5); }
+        
+        /* 5x5 棋盘布局 */
         #board {
-            position: relative;
-            display: grid;
-            grid-template-columns: repeat(4, 75px);
-            grid-template-rows: repeat(4, 75px);
-            gap: 8px;
-            padding: 15px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: grid; grid-template-columns: repeat(5, 65px); grid-template-rows: repeat(5, 65px);
+            gap: 8px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 15px; position: relative;
         }
-
         .cell {
-            width: 75px; height: 75px;
-            background: #fdfcfc; border: 2px solid #ffdae0;
-            border-radius: 12px; display: flex; align-items: center;
-            justify-content: center; font-size: 0.8rem; color: #ff6b81;
-            text-align: center; box-sizing: border-box; padding: 5px;
+            width: 65px; height: 65px; border-radius: 10px; font-size: 0.65rem;
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            padding: 4px; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.1);
         }
-
         .empty { visibility: hidden; }
+        
+        /* 格子配色 */
+        .type-start { background: #fff; color: #000; font-weight: bold; }
+        .type-reward { background: var(--reward-bg); color: #fff; }
+        .type-punish { background: var(--punish-bg); color: #fff; }
+        .type-special { background: #f1c40f; color: #000; font-weight: bold; } /* 道具格 */
+        .type-end { background: #e91e63; color: #fff; font-weight: bold; box-shadow: 0 0 15px #e91e63; }
 
+        /* 棋子 */
         .piece {
-            position: absolute; width: 30px; height: 30px;
-            border-radius: 50%; border: 3px solid white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 100;
+            position: absolute; width: 28px; height: 28px; border-radius: 50%;
+            border: 2px solid #fff; transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 10;
         }
-        #p1 { background-color: var(--p1-color); }
-        #p2 { background-color: var(--p2-color); transform: translate(8px, 8px); }
+        #p1 { background: var(--p1-color); }
+        #p2 { background: var(--p2-color); transform: translate(6px, 6px); }
 
-        /* 3D 骰子容器 */
-        .dice-container {
-            perspective: 600px;
-            margin: 25px 0;
-        }
-
-        .dice {
-            width: 60px; height: 60px;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 1.2s cubic-bezier(0.15, 0.8, 0.3, 1);
-        }
-
-        .dice div {
-            position: absolute; width: 60px; height: 60px;
-            background: white; border: 2px solid #ddd;
-            border-radius: 10px; display: flex;
-            align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; color: #333;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
-        }
-
-        /* 骰子面的坐标修正 */
-        .face-1 { transform: rotateY(0deg) translateZ(30px); }
-        .face-6 { transform: rotateY(180deg) translateZ(30px); }
-        .face-3 { transform: rotateY(90deg) translateZ(30px); }
-        .face-4 { transform: rotateY(-90deg) translateZ(30px); }
-        .face-2 { transform: rotateX(-90deg) translateZ(30px); }
-        .face-5 { transform: rotateX(90deg) translateZ(30px); }
-
-        .controls { text-align: center; }
+        /* 骰子与展示区 */
+        .dice-area { margin: 15px 0; display: flex; flex-direction: column; align-items: center; }
         #dice-btn {
-            padding: 12px 40px; font-size: 1rem;
-            background: linear-gradient(135deg, #ff6b81, #ff4757);
-            color: white; border: none; border-radius: 50px;
-            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
-            margin-top: 5px;
+            padding: 10px 40px; border-radius: 25px; border: none;
+            background: #ff4757; color: white; font-weight: bold; font-size: 1rem;
         }
-
-        #msg-display {
-            margin-top: 15px; color: #555; font-size: 1rem;
-            min-height: 2.5rem; max-width: 300px; line-height: 1.4;
+        #msg-box {
+            width: 90%; max-width: 320px; min-height: 100px; margin-top: 15px;
+            background: rgba(0,0,0,0.4); border: 1px solid #ff4757;
+            border-radius: 10px; padding: 15px; text-align: center;
         }
+        .task-content { font-size: 1rem; line-height: 1.4; color: #ff758c; margin-top: 5px; }
+        .card-tag { color: #f1c40f; font-weight: bold; display: block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-    <h1>❤️ 我们的飞行棋</h1>
-    
-    <div id="board">
-        <div class="cell" id="c0">起点</div>
-        <div class="cell" id="c1">抱抱</div>
-        <div class="cell" id="c2">真心话</div>
-        <div class="cell" id="c3">夸对方</div>
-        <div class="cell" id="c11">亲一下</div>
-        <div class="empty"></div><div class="empty"></div>
-        <div class="cell" id="c4">摸头杀</div>
-        <div class="cell" id="c10">对视</div>
-        <div class="empty"></div><div class="empty"></div>
-        <div class="cell" id="c5">大冒险</div>
-        <div class="cell" id="c9">捏脸</div>
-        <div class="cell" id="c8">倒退</div>
-        <div class="cell" id="c7">互换</div>
-        <div class="cell" id="c6">终点</div>
+<h1>🔞 极乐飞行棋：全指令集成版</h1>
 
-        <div id="p1" class="piece"></div>
-        <div id="p2" class="piece"></div>
+<div id="board">
     </div>
 
-    <div class="dice-container">
-        <div class="dice" id="dice">
-            <div class="face-1">1</div>
-            <div class="face-6">6</div>
-            <div class="face-3">3</div>
-            <div class="face-4">4</div>
-            <div class="face-2">2</div>
-            <div class="face-5">5</div>
-        </div>
-    </div>
+<div class="dice-area">
+    <button id="dice-btn" onclick="roll()">投掷骰子</button>
+</div>
 
-    <div class="controls">
-        <button id="dice-btn" onclick="roll()">投掷骰子</button>
-        <div id="msg-display">点击开始</div>
-    </div>
+<div id="msg-box">
+    <div id="msg-title" style="font-weight: bold;">等待开始...</div>
+    <div id="msg-body" class="task-content">准备好度过一个难忘的夜晚了吗？</div>
+</div>
 
-    <script>
-        const players = [
-            { id: 'p1', pos: 0, name: '红色玩家', color: '#ff6b81' },
-            { id: 'p2', pos: 0, name: '蓝色玩家', color: '#4834d4' }
-        ];
+<div id="p1" class="piece"></div>
+<div id="p2" class="piece"></div>
+
+<script>
+    // 1. 全任务库整合
+    const taskLibrary = {
+        rewards: [
+            "【轻】互相深吻+情话3句 (1-2min)", "【轻】帮对方舔耳朵/乳头60秒", "【轻】展示情趣内衣转圈展示",
+            "【中】69式2分钟，看谁先忍不住", "【中】女上位骑3分钟，你控节奏", "【中】帮对方乳交到射",
+            "【重】对方深喉+口爆吞精给你", "【重】一起无套内射一次", "【重】对方当奴隶喊主人伺候你",
+            "【极】满足你任何要求一晚", "【极】重度感官剥夺后极致性爱"
+        ],
+        punishments: [
+            "【轻】自慰展示2分钟并对视", "【轻】口90秒，多用舌头", "【轻】被扇耳光2下+认错",
+            "【中】后入8min+打屁股10下", "【中】边缘控制5次，快到就停", "【中】滴蜡在胸部/大腿20滴",
+            "【重】全身紧缚+蒙眼+口球15min", "【重】用鞭子或皮带抽30下", "【重】强制玩到失禁/潮吹",
+            "【极】感官剥夺放置到结束", "【极】高潮禁止整场，结束强制10次"
+        ],
+        specials: [
+            "🎁 获得【反转卡】：可将下次惩罚转移给对方",
+            "🎁 获得【减半卡】：下次惩罚时长/次数减半",
+            "🎁 获得【重投卡】：可强制对方重新投掷",
+            "🎁 获得【免疫卡】：豁免下一次任何惩罚"
+        ]
+    };
+
+    // 2. 棋盘格子定义 (16格环形)
+    const cells = [
+        { type: 'start', text: '起点' },
+        { type: 'reward', text: '甜蜜' }, { type: 'punish', text: '惩罚' },
+        { type: 'special', text: '卡牌' }, { type: 'reward', text: '奖励' },
+        { type: 'punish', text: '重罚' }, { type: 'reward', text: '大奖' },
+        { type: 'special', text: '卡牌' }, { type: 'punish', text: '挑战' },
+        { type: 'reward', text: '诱惑' }, { type: 'punish', text: '屈辱' },
+        { type: 'special', text: '卡牌' }, { type: 'reward', text: '极乐' },
+        { type: 'punish', text: '极致' }, { type: 'reward', text: '惊喜' },
+        { type: 'end', text: '终点' }
+    ];
+
+    // 3. 5x5 环形布局索引映射
+    const layout = [0, 1, 2, 3, 4, 15, -1, -1, -1, 5, 14, -1, -1, -1, 6, 13, -1, -1, -1, 7, 12, 11, 10, 9, 8];
+    const boardEl = document.getElementById('board');
+    layout.forEach((idx, i) => {
+        const div = document.createElement('div');
+        if (idx === -1) div.className = 'empty';
+        else {
+            div.className = `cell type-${cells[idx].type}`;
+            div.id = `c${idx}`;
+            div.innerText = cells[idx].text;
+        }
+        boardEl.appendChild(div);
+    });
+
+    // 4. 游戏逻辑
+    const players = [
+        { id: 'p1', pos: 0, name: '红色玩家', color: '#ff4757', cards: [] },
+        { id: 'p2', pos: 0, name: '黑色玩家', color: '#fff', cards: [] }
+    ];
+    let turn = 0;
+
+    function roll() {
+        const btn = document.getElementById('dice-btn');
+        btn.disabled = true;
+        const dice = Math.floor(Math.random() * 6) + 1;
+        const p = players[turn];
+
+        document.getElementById('msg-title').innerText = `${p.name} 投掷中...`;
         
-        const tasks = {
-            1: "拥抱 10 秒 🤗", 2: "说出一件对方的趣事 😂", 
-            3: "夸对方的一个细节 ✨", 4: "摸摸对方的头 ✋",
-            5: "大冒险：亲对方一口 💋", 7: "展示手机最后一张照片 📸",
-            8: "【惩罚】倒退 2 格并揉肩 💆", 9: "捏脸蛋 5 秒 🤏",
-            10: "深情对视 20 秒 👀", 11: "亲下额头 💋"
-        };
+        setTimeout(() => {
+            p.pos += dice;
+            if (p.pos >= 15) p.pos = 15;
+            updateUI();
+            handleLanding(p, dice);
+        }, 600);
+    }
 
-        let currentPlayerIndex = 0;
-        const maxPos = 11;
-        let rotationX = 0;
-        let rotationY = 0;
+    function handleLanding(p, dice) {
+        const cell = cells[p.pos];
+        let taskText = "";
+        let title = `${p.name} 掷出 ${dice} 点`;
 
-        function roll() {
-            const btn = document.getElementById('dice-btn');
-            const diceEl = document.getElementById('dice');
-            btn.disabled = true;
-
-            const diceValue = Math.floor(Math.random() * 6) + 1;
-            
-            // 核心修复：精准计算每个点数对应的 CSS 旋转角度
-            // 我们通过在原有的旋转基础上增加大角度偏移，实现“滚动感”
-            const extraRounds = 5; // 每次多转 5 圈
-            
-            let targetX = 0, targetY = 0;
-            
-            switch(diceValue) {
-                case 1: targetX = 0;   targetY = 0;   break;
-                case 6: targetX = 0;   targetY = 180; break;
-                case 3: targetX = 0;   targetY = -90; break;
-                case 4: targetX = 0;   targetY = 90;  break;
-                case 2: targetX = 90;  targetY = 0;   break;
-                case 5: targetX = -90; targetY = 0;   break;
-            }
-            
-            // 叠加圈数防止倒转，并实现丝滑滚动
-            rotationX += (extraRounds * 360) + targetX - (rotationX % 360);
-            rotationY += (extraRounds * 360) + targetY - (rotationY % 360);
-
-            diceEl.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-
-            setTimeout(() => {
-                const p = players[currentPlayerIndex];
-                p.pos += diceValue;
-                if (p.pos >= maxPos) p.pos = maxPos;
-                
-                updateUI();
-                
-                if(p.pos === maxPos) {
-                    document.getElementById('msg-display').innerHTML = `🎉 ${p.name} 赢了！`;
-                } else {
-                    checkTask(p, diceValue);
-                }
-            }, 1300); 
+        if (cell.type === 'reward') {
+            taskText = taskLibrary.rewards[Math.floor(Math.random() * taskLibrary.rewards.length)];
+        } else if (cell.type === 'punish') {
+            taskText = taskLibrary.punishments[Math.floor(Math.random() * taskLibrary.punishments.length)];
+        } else if (cell.type === 'special') {
+            const card = taskLibrary.specials[Math.floor(Math.random() * taskLibrary.specials.length)];
+            p.cards.push(card);
+            taskText = `抽到一张卡：${card}`;
+        } else if (cell.type === 'end') {
+            taskText = "🎉 抵达终点！败者今晚彻底沦为胜者的奴隶，满足任何极重度要求！";
         }
 
-        function checkTask(p, diceValue) {
-            const task = tasks[p.pos] || "休息一下 ❤️";
-            document.getElementById('msg-display').innerHTML = 
-                `<span style="color:${p.color}"><b>${p.name}</b></span> 掷出 ${diceValue} 点，停在第 ${p.pos} 格：<br>${task}`;
-            
-            currentPlayerIndex = 1 - currentPlayerIndex;
+        document.getElementById('msg-title').innerText = title;
+        document.getElementById('msg-body').innerText = taskText;
+
+        if (p.pos < 15) {
+            turn = 1 - turn;
             document.getElementById('dice-btn').disabled = false;
+        } else {
+            document.getElementById('dice-btn').innerText = "结束";
         }
+    }
 
-        function updateUI() {
-            players.forEach(p => {
-                const piece = document.getElementById(p.id);
-                const cell = document.getElementById(`c${p.pos}`);
-                piece.style.left = (cell.offsetLeft + 20) + 'px';
-                piece.style.top = (cell.offsetTop + 20) + 'px';
-            });
-        }
+    function updateUI() {
+        players.forEach(p => {
+            const el = document.getElementById(p.id);
+            const cellEl = document.getElementById(`c${p.pos}`);
+            el.style.left = (cellEl.offsetLeft + 18) + 'px';
+            el.style.top = (cellEl.offsetTop + 18) + 'px';
+        });
+    }
 
-        window.onload = updateUI;
-    </script>
+    window.onload = updateUI;
+</script>
 </body>
 </html>
