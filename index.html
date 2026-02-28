@@ -3,154 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔞 极乐航线：长时对战版</title>
+    <title>情侣飞行棋 V1.0 (网页版)</title>
     <style>
         :root {
-            --p1-color: #ff4757; --p2-color: #00d2d3;
-            --bg-dark: #0a0a12; --accent: #e91e63;
+            --male-color: #3498db; --female-color: #e84393;
+            --bg: #fdf2f2; --cell-border: #f8a5c2;
         }
         body {
-            margin: 0; background-color: var(--bg-dark); color: white;
-            font-family: 'PingFang SC', sans-serif; display: flex; flex-direction: column; align-items: center;
+            margin: 0; background-color: var(--bg); font-family: "Microsoft YaHei", sans-serif;
+            display: flex; flex-direction: column; align-items: center; padding-bottom: 20px;
         }
-        
-        /* 7x7 大型棋盘 */
-        #game-board {
-            display: grid; grid-template-columns: repeat(7, 50px); grid-template-rows: repeat(7, 50px);
-            gap: 5px; padding: 15px; background: rgba(255,255,255,0.03);
-            border: 2px solid #333; border-radius: 10px; position: relative; margin-top: 10px;
+        h1 { color: #d63031; font-size: 1.4rem; margin: 15px 0 5px; }
+        .author { font-size: 0.7rem; color: #636e72; margin-bottom: 10px; }
+
+        /* 9x9 大型棋盘布局 */
+        #board-container {
+            display: grid; grid-template-columns: repeat(9, 40px); grid-template-rows: repeat(9, 40px);
+            gap: 4px; padding: 10px; background: white; border: 4px solid #fab1a0;
+            border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative;
         }
         .cell {
-            width: 50px; height: 50px; border-radius: 6px; font-size: 0.6rem;
-            display: flex; align-items: center; justify-content: center; text-align: center;
-            border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box;
+            width: 40px; height: 40px; border: 1px solid var(--cell-border);
+            border-radius: 4px; font-size: 0.55rem; display: flex; align-items: center;
+            justify-content: center; text-align: center; overflow: hidden; word-break: break-all;
+            background: #fffafa; line-height: 1.1;
         }
-        
-        /* 颜色系统 */
-        .type-start { background: #fff; color: #000; }
-        .type-r1 { background: #ff758c; } /* 轻奖励 */
-        .type-r2 { background: #ff4757; font-weight: bold; } /* 重奖励 */
-        .type-p1 { background: #a29bfe; } /* 轻惩罚 */
-        .type-p2 { background: #6c5ce7; font-weight: bold; } /* 重惩罚 */
-        .type-trap { background: #57606f; color: #ffa502; } /* 陷阱/停留格 */
-        .type-card { background: #f1c40f; color: #000; } /* 道具 */
-        .type-end { background: #e91e63; box-shadow: 0 0 15px #e91e63; animation: breathe 2s infinite; }
-        
-        @keyframes breathe { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        .empty { visibility: hidden; }
+
+        /* 核心节点配色 */
+        .type-start-m { background: var(--male-color); color: white; font-weight: bold; }
+        .type-start-f { background: var(--female-color); color: white; font-weight: bold; }
+        .type-task { background: #fff1f2; color: #d63031; }
+        .type-action { background: #fdf9e7; color: #b7950b; font-weight: bold; }
+        .type-drink { background: #e1f5fe; color: #0288d1; }
+        .type-end { background: #d63031; color: white; font-weight: bold; border-radius: 50%; box-shadow: 0 0 10px #d63031; }
 
         /* 棋子 */
         .piece {
             position: absolute; width: 22px; height: 22px; border-radius: 50%;
-            border: 2px solid #fff; transition: all 0.6s ease; z-index: 10;
+            border: 2px solid white; transition: all 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 100;
         }
-        #p1 { background: var(--p1-color); }
-        #p2 { background: var(--p2-color); transform: translate(4px, 4px); }
+        #p-male { background: var(--male-color); box-shadow: 0 0 5px var(--male-color); }
+        #p-female { background: var(--female-color); box-shadow: 0 0 5px var(--female-color); }
 
-        /* 展示窗口 */
-        #info-panel {
-            width: 90%; max-width: 360px; margin-top: 15px;
-            background: rgba(255,255,255,0.07); border-radius: 15px; padding: 15px;
-            text-align: center; border-bottom: 3px solid var(--accent);
+        /* 消息展示 */
+        #msg-panel {
+            width: 90%; max-width: 360px; margin-top: 15px; background: white;
+            padding: 15px; border-radius: 12px; border-left: 5px solid #d63031;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;
         }
-        .timer { font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-        .current-task { font-size: 1rem; line-height: 1.5; min-height: 60px; margin: 10px 0; color: #ff758c; }
+        #task-text { font-size: 1rem; color: #2d3436; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         
         #dice-btn {
-            padding: 12px 50px; border-radius: 30px; border: none;
-            background: linear-gradient(45deg, #ff4757, #e91e63);
-            color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            margin-top: 10px; padding: 12px 60px; border-radius: 30px; border: none;
+            background: linear-gradient(135deg, #ff7675, #d63031); color: white;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(214,48,49,0.3);
         }
-        #dice-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .empty { visibility: hidden; }
+        #dice-btn:disabled { background: #ccc; box-shadow: none; }
     </style>
 </head>
 <body>
 
-    <h1 style="margin-bottom: 5px;">🫦 极乐长征 (60min+)</h1>
-    <div class="timer">建议准备：避孕套、润滑剂、各类玩具、眼罩、绳索、温水</div>
+    <h1>情侣飞行棋 V1.0</h1>
+    <div class="author">复刻设计：33的大狗狗 | 网页版适配：Gemini</div>
 
-    <div id="game-board">
+    <div id="board-container">
         </div>
 
-    <div id="info-panel">
-        <div id="turn-info" style="font-weight: bold; color: #fff;">点击开始投掷</div>
-        <div id="task-display" class="current-task">夜晚才刚刚开始...</div>
+    <div id="msg-panel">
+        <div id="turn-display" style="font-size: 0.8rem; color: #636e72; margin-bottom: 5px;">准备开始</div>
+        <div id="task-text">点击投掷，开始你们的夜晚</div>
         <button id="dice-btn" onclick="roll()">投掷骰子</button>
     </div>
 
-    <div id="p1" class="piece"></div>
-    <div id="p2" class="piece"></div>
+    <div id="p-male" class="piece"></div>
+    <div id="p-female" class="piece"></div>
 
 <script>
-    // 1. 扩充后的全量任务池 (包含你发的所有内容)
-    const library = {
-        r1: [ // 轻奖励
-            "互相深吻并说3句情话 (2min)", "用嘴喂对方吃东西/喝水", "穿情趣内衣展示转圈", 
-            "帮对方舔耳朵/乳头各60秒", "温柔抚摸对方全身3分钟"
-        ],
-        r2: [ // 重奖励
-            "69式直到其中一人求饶", "女上位骑乘5分钟(自己控速)", "帮对方乳交到射", 
-            "对方深喉并口爆吞精", "满足你任何一个从未提过的要求"
-        ],
-        p1: [ // 轻惩罚
-            "自慰展示2分钟并持续对视", "扇耳光2下并说：主人口力我错了", "戴上项圈在房间爬两圈", 
-            "给对方口90秒(多用舌头)", "舔对方脚丫及趾缝2分钟"
-        ],
-        p2: [ // 重惩罚
-            "后入8分钟+被打屁股10下", "边缘控制5次(快射时停下)", "滴蜡在敏感部位20滴", 
-            "全身紧缚+蒙眼+口球放置15min", "不准动，由对方玩弄到潮吹/失禁"
-        ],
-        trap: [ // 陷阱/强制格
-            "🔥 缠绵时刻：原地停留，做爱直到掷出单数才能离开",
-            "🔥 体力考验：原地停留，对方任意折磨你5分钟",
-            "🔥 极度渴望：后退3格，并重新执行落点任务"
-        ],
-        card: [
-            "🃏【反转卡】下次惩罚转移给对方", "🃏【重投卡】强制对方重投",
-            "🃏【双倍卡】下次奖励/惩罚效果x2", "🃏【奴隶卡】接下来的3回合对方必须称呼你为主人"
-        ]
-    };
-
-    // 2. 24格大棋盘定义 (7x7 环形)
-    // 布局索引顺序: 0-6(上), 12(右), 18(下), 24(左)
-    const cells = [
-        {t:'start', n:'起点'}, {t:'r1', n:'暖场'}, {t:'p1', n:'调教'}, {t:'card', n:'卡牌'}, {t:'r1', n:'甜蜜'}, {t:'p2', n:'重罚'}, {t:'trap', n:'缠绵'},
-        {t:'r2', n:'高潮'}, {t:'p1', n:'服从'}, {t:'card', n:'卡牌'}, {t:'r1', n:'诱惑'}, {t:'p2', n:'极致'}, {t:'trap', n:'强制'},
-        {t:'end', n:'终点'}, {t:'r2', n:'奖励'}, {t:'p2', n:'重度'}, {t:'card', n:'卡牌'}, {t:'r1', n:'享受'}, {t:'p1', n:'羞耻'},
-        {t:'trap', n:'停留'}, {t:'r2', n:'极乐'}, {t:'p2', n:'凌辱'}, {t:'card', n:'卡牌'}, {t:'r1', n:'温柔'}
+    // 任务内容池（参考图中的格位）
+    const tasks = [
+        { n: "起点(男)", t: "start-m" },
+        { n: "脱一件", t: "action" }, { n: "喝半杯", t: "drink" }, { n: "口交对流水10s", t: "task" },
+        { n: "舔耳朵10s", t: "task" }, { n: "嘴喂酒", t: "action" }, { n: "喝半杯", t: "drink" },
+        { n: "脱一件", t: "action" }, { n: "伸进内裤30s", t: "task" }, { n: "亲脖子种草莓", t: "task" },
+        { n: "后退3格脱一件", t: "action" }, { n: "手交或抠1min", t: "task" }, { n: "喝半杯", t: "drink" },
+        { n: "舔大腿内侧10s", t: "task" }, { n: "休一轮", t: "drink" }, { n: "喝半杯", t: "drink" },
+        { n: "舌吻30s", t: "task" }, { n: "脱一件", t: "action" }, { n: "退回起点", t: "drink" },
+        { n: "后退3格脱一件", t: "action" }, { n: "舔乳头10s", t: "task" }, { n: "脱一件", t: "action" },
+        { n: "舌吻30s", t: "task" }, { n: "伸进内裤30s", t: "task" }, { n: "拍私处照1张", t: "action" },
+        { n: "选地种草莓", t: "task" }, { n: "休一轮", t: "drink" }, { n: "喝半杯", t: "drink" },
+        { n: "后退6格脱一件", t: "action" }, { n: "脱一件", t: "action" }, { n: "打屁股3下", t: "task" },
+        { n: "自己脱一件", t: "action" }, { n: "伸进内裤30s", t: "task" }, { n: "喝半杯", t: "drink" },
+        { n: "舔到胸口", t: "task" }, { n: "休一轮", t: "drink" }, { n: "喝半杯", t: "drink" },
+        { n: "舌吻30s", t: "task" }, { n: "喝一杯脱一件", t: "action" }, { n: "起点(女)", t: "start-f" },
+        { n: "终点(必做题)", t: "end" }
     ];
 
-    // 7x7 矩阵映射 (共49格，环形路径24格)
-    const layout = [
-        0, 1, 2, 3, 4, 5, 6,
-        23, -1, -1, -1, -1, -1, 7,
-        22, -1, -1, -1, -1, -1, 8,
-        21, -1, -1, -1, -1, -1, 9,
-        20, -1, -1, -1, -1, -1, 10,
-        19, -1, -1, -1, -1, -1, 11,
-        18, 17, 16, 15, 14, -1, 12 // 13是终点，放在中心或末尾
+    // 棋盘路径映射 (9x9 环绕)
+    const boardLayout = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8,
+        37, -1, -1, -1, -1, -1, -1, -1, 9,
+        36, -1, -1, -1, -1, -1, -1, -1, 10,
+        35, -1, -1, 40, 40, 40, -1, -1, 11, // 终点占位
+        34, -1, -1, 40, 40, 40, -1, -1, 12,
+        33, -1, -1, 40, 40, 40, -1, -1, 13,
+        32, -1, -1, -1, -1, -1, -1, -1, 14,
+        31, -1, -1, -1, -1, -1, -1, -1, 15,
+        30, 29, 28, 27, 26, 25, 24, 23, 22
     ];
-    // 微调终点位置到左下角前的空位
-    layout[47] = 13; 
+    // 女生起点特别标注
+    const femaleStartIndex = 39; 
 
-    const boardEl = document.getElementById('game-board');
-    layout.forEach((idx, i) => {
+    // 初始化渲染
+    const boardEl = document.getElementById('board-container');
+    boardLayout.forEach((val, i) => {
         const div = document.createElement('div');
-        if (idx === -1) div.className = 'empty';
-        else {
-            div.className = `cell type-${cells[idx].t}`;
-            div.id = `c${idx}`;
-            div.innerText = cells[idx].n;
+        if (val === -1) div.className = 'empty';
+        else if (val === 40) {
+            div.className = 'cell type-end';
+            div.innerText = i === 31 ? '终点' : '';
+        } else {
+            const data = tasks[val];
+            div.className = `cell type-${data.t}`;
+            div.id = `cell-${val}`;
+            div.innerText = data.n;
         }
         boardEl.appendChild(div);
     });
 
-    // 3. 游戏核心
+    // 游戏状态
     const players = [
-        { id: 'p1', pos: 0, name: '红色', color: '#ff4757' },
-        { id: 'p2', pos: 0, name: '蓝色', color: '#00d2d3' }
+        { id: 'p-male', pos: 0, name: '男生', color: '#3498db' },
+        { id: 'p-female', pos: 39, name: '女生', color: '#e84393' }
     ];
-    let turn = 0;
+    let turn = 0; // 0: 男, 1: 女
 
     function roll() {
         const btn = document.getElementById('dice-btn');
@@ -158,47 +144,52 @@
         const dice = Math.floor(Math.random() * 6) + 1;
         const p = players[turn];
 
-        document.getElementById('turn-info').innerText = `${p.name} 投掷中...`;
+        document.getElementById('turn-display').innerText = `${p.name} 正在投掷...`;
         
+        // 移动逻辑
         setTimeout(() => {
-            p.pos += dice;
-            if (p.pos >= 13 && p.pos < 18) { // 简单逻辑纠偏
-                // 确保能走到终点
+            if (turn === 0) { // 男生顺时针
+                p.pos = (p.pos + dice);
+                if (p.pos >= 40) p.pos = 40; // 进入终点区
+            } else { // 女生逆时针
+                p.pos = (p.pos - dice);
+                if (p.pos <= 0) p.pos = 40; // 这里的逻辑简化为接近终点
             }
-            if (p.pos >= 23) p.pos = 13; // 终点
-            
-            updateUI();
-            
-            const cell = cells[p.pos >= 24 ? 13 : p.pos];
-            let task = "";
-            if(cell.t === 'r1') task = library.r1[Math.floor(Math.random()*library.r1.length)];
-            if(cell.t === 'r2') task = library.r2[Math.floor(Math.random()*library.r2.length)];
-            if(cell.t === 'p1') task = library.p1[Math.floor(Math.random()*library.p1.length)];
-            if(cell.t === 'p2') task = library.p2[Math.floor(Math.random()*library.p2.length)];
-            if(cell.t === 'trap') task = library.trap[Math.floor(Math.random()*library.trap.length)];
-            if(cell.t === 'card') task = library.card[Math.floor(Math.random()*library.card.length)];
-            if(cell.t === 'end') task = "🎉 抵达终点！全场大奖：胜者拥有对败者的绝对处置权，执行任意极重度内容1小时。";
 
-            document.getElementById('turn-info').innerText = `${p.name} 掷出 ${dice} 点`;
-            document.getElementById('task-display').innerText = task;
+            updatePiecePositions();
 
-            if (p.pos !== 13) {
+            // 任务判断
+            const task = (p.pos === 40) ? {n: "终点奖励：转账100元并解锁任意姿势！"} : tasks[p.pos];
+            document.getElementById('task-text').innerText = `掷出 ${dice} 点：${task.n}`;
+            
+            if (p.pos !== 40) {
                 turn = 1 - turn;
-                setTimeout(() => { btn.disabled = false; }, 2000);
+                btn.disabled = false;
+                const nextP = players[turn];
+                document.getElementById('turn-display').innerText = `轮到 ${nextP.name} 了`;
+                document.getElementById('turn-display').style.color = nextP.color;
+            } else {
+                document.getElementById('turn-display').innerText = "游戏结束";
+                btn.innerText = "重新开始";
+                btn.onclick = () => location.reload();
             }
         }, 600);
     }
 
-    function updateUI() {
+    function updatePiecePositions() {
         players.forEach(p => {
-            const cellEl = document.getElementById(`c${p.pos > 23 ? 13 : p.pos}`);
+            // 处理终点的坐标定位
+            const targetId = (p.pos === 40) ? 'cell-40' : `cell-${p.pos}`;
+            const targetCell = document.getElementById('cell-40') || document.querySelector('.type-end');
+            const actualCell = document.getElementById(`cell-${p.pos}`) || targetCell;
+            
             const piece = document.getElementById(p.id);
-            piece.style.left = (cellEl.offsetLeft + 14) + 'px';
-            piece.style.top = (cellEl.offsetTop + 14) + 'px';
+            piece.style.left = (actualCell.offsetLeft + 8) + 'px';
+            piece.style.top = (actualCell.offsetTop + 8) + 'px';
         });
     }
 
-    window.onload = updateUI;
+    window.onload = updatePiecePositions;
 </script>
 </body>
 </html>
